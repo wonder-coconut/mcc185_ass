@@ -8,24 +8,19 @@ from qutip.measurement import measure,measurement_statistics
 hbar = 1
 
 def HRWA(w0,w,omega0):
-    return 0.5*((w-w0)*sigmaz()  + omega0*sigmax())
+    return hbar * 0.5*((w-w0) * sigmaz()  + omega0 * sigmax())
 
-def bloch_vector_set(states):
-    res_set = []
-    for state in states:
-        res_set.append(bloch_vector(state))
-    
-    return res_set
+def H_time_function(t,args):
+    return np.cos(args['w'] * t)
 
-def bloch_vector(state):
-    x = (state.dag() * sigmax() * state).full()[0,0].real
-    y = (state.dag() * sigmay() * state).full()[0,0].real
-    z = (state.dag() * sigmaz() * state).full()[0,0].real
-    return [x, y, z]
+def H_time_independent(w0,omega0):
+    H0 = -hbar * 0.5 * w0 * sigmaz()
+    H1 = hbar * omega0 * sigmax()
+    return [H0,H1]
 
 w0 = 20
 omega0 = 1
-detuning = [0,2]
+detuning = [0]
 
 timesteps = np.linspace(0,2*np.pi/omega0,1000)
 
@@ -35,9 +30,18 @@ results = []
 
 for delta in detuning:
 
-    H = HRWA(w0,w0+delta,omega0)
+    #H = HRWA(w0,w0+delta,omega0)
+    H_temp = H_time_independent(w0,omega0)
+    H0 = H_temp[0]
+    H1 = H_temp[1]
+
+    args = {'w':w0+delta}    
+
+    H = QobjEvo([H0,[H1,H_time_function]],args = args,tlist = timesteps)
+
 
     res = sesolve(H, psi0, timesteps)
+
     results.append(res)
 
 epops = [[],[],[],[]]
@@ -58,7 +62,7 @@ while(i < len(detuning)):
     j = 0
     while(j < len(op_states)):
         b[i].add_states(op_states[j],'point',colors[i])
-        j += int(0.01 * len(op_states))
+        j += 1
 
     i+=1
 
