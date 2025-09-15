@@ -1,34 +1,21 @@
-import numpy as np
-import matplotlib.pyplot as plt
-from qutip import basis, sigmaz, sigmax, sesolve, Bloch
+import qutip as qt
 
-# Parameters
-Omega = 2.0
-detunings = [0.0, 1.0, 2.0, 5.0]
-tlist = np.linspace(0, 10, 200)
+# Create Bloch sphere
+b = qt.Bloch()
 
-# Initial state |0>
-psi0 = basis(2, 0)
+# Define a qubit state
+psi = (qt.basis(2,0) + qt.basis(2,1)).unit()
 
-# Bloch sphere
-b = Bloch()
+# Convert the state to Bloch vector coordinates
+vec = qt.bloch_vector(psi)  # returns [x, y, z]
 
-# Custom colors for different detunings
-colors = ['r', 'g', 'b', 'm']
+# Add as a point (note: needs to be 2D: shape 3xN)
+b.add_points([vec])  # wrap in list to make it 3x1
 
-for Delta, c in zip(detunings, colors):
-    # Hamiltonian
-    H = 0.5 * Delta * sigmaz() + 0.5 * Omega * sigmax()
-    
-    # Solve
-    result = sesolve(H, psi0, tlist)
-    
-    # Add trajectory (list of states) as a line
-    b.add_states(result.states)
-    
-    # Assign color for this trajectory
-    b.line_color = [c]
+# Optional: customize
+b.point_color = ['r']
+b.point_marker = ['o']
+b.point_size = [50]
 
 # Show
 b.show()
-plt.show()
