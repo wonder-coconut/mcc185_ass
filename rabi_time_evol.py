@@ -5,53 +5,50 @@ from qutip import Bloch, QobjEvo, basis, sesolve, sigmax, sigmaz
 from qutip.measurement import measure,measurement_statistics
 
 #hbar = 1.05457182e-34
-hbar = 1
-choose_hamiltonian = 1 #0 for RWA, 1 for non-RWA
+hbar = 1 #atomic units
+choose_hamiltonian = 0 #0 for RWA, 1 for non-RWA
 choose_bloch = 1 #0 for population plot, 1 for bloch sphere
 
-def HRWA(w0,w,omega0):
+def HRWA(w0,w,omega0): #rotated and RWA'd hamiltonian
     return hbar * 0.5*((w-w0) * sigmaz()  + omega0 * sigmax())
 
-def H_time_function(t,args):
+def H_time_function(t,args): #time dependence for the original hamiltonian
     return np.cos(args['w'] * t)
 
-def H_time_independent(w0,omega0):
+def H_time_independent(w0,omega0): #time independent original hamiltonian
     H0 = -hbar * 0.5 * w0 * sigmaz()
     H1 = hbar * omega0 * sigmax()
     return [H0,H1]
 
 w0 = 20 #GHz
 omega0 = 1 #GHz
-detuning = [0,2]
+detuning = [0,2] #GHz
 
 timesteps = np.linspace(0,2*np.pi/omega0,1000) #nanosecond scale
 
-psi0 = basis(2,1)
+psi0 = basis(2,1) #|e>
 e_state = basis(2,1)
-results = []
+results = [] 
 for delta in detuning:
 
-    if(choose_hamiltonian):
+    if(choose_hamiltonian): #og hamiltonian
         H_temp = H_time_independent(w0,omega0)
         H0 = H_temp[0]
         H1 = H_temp[1]
         args = {'w':w0+delta}    
         H = QobjEvo([H0,[H1,H_time_function]],args = args,tlist = timesteps)
-    else:
+    else: #rwa hamiltonian
         H = HRWA(w0,w0+delta,omega0)
 
-
-    res = sesolve(H, psi0, timesteps)
+    res = sesolve(H, psi0, timesteps) #time dependent schrodinger equation solver
 
     results.append(res)
 
-
-
-epops = [[],[]]
+epops = [[],[]] #population stats for both detunings
 
 i = 0
 
-b = [Bloch(),Bloch()]
+b = [Bloch(),Bloch()] #bloch sphere for both detunings
 colors = ['r','g']
 
 while(i < len(detuning)):
@@ -59,19 +56,19 @@ while(i < len(detuning)):
     res = results[i]
     op_states = res.states
 
-    for state in op_states:
-        epops[i].append(np.abs(state.overlap(e_state))**2)
+    for state in op_states: #population value
+        epops[i].append(np.abs(state.overlap(e_state))**2) #inner product |<e|psi>|^2
     
     j = 0
-    while(j < len(op_states)):
-        b[i].add_states(op_states[j],'point',colors[i])
+    while(j < len(op_states)): 
+        b[i].add_states(op_states[j],'point',colors[i]) #bloch sphere mapping
         j += 1
 
     i+=1
 
 
 i = 0
-
+#plotting
 if(choose_bloch):
     while(i < len(detuning)):
         b[i].show()
